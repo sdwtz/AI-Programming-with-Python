@@ -9,6 +9,7 @@ from torch import optim
 from torchvision import datasets, transforms, models
 
 import json
+import os
 
 
 def parse():
@@ -17,10 +18,10 @@ def parse():
     parser = argparse.ArgumentParser(description='Train a nueronal network.')
     parser.add_argument('--data_dir', default='flowers', help='Name a data drectory')
     parser.add_argument('--arch', default='vgg19', help='Choose a model: vgg19, densenet, alexnet')
-    parser.add_argument('--hidden_units', default=512, help='Set the number of hidden nodes')
-    parser.add_argument('--learning_rate', default=0.01, help='Set the learning rate')
-    parser.add_argument('--epochs', default=20, help='Set the number of epochs')
-    parser.add_argument('--gpu', default=True, help='enable cuda with True')                        
+    parser.add_argument('--hidden_units', type=int, default=512, help='Set the number of hidden nodes')
+    parser.add_argument('--learning_rate', type= float, default=0.01, help='Set the learning rate')
+    parser.add_argument('--epochs', type=int, default=20, help='Set the number of epochs')
+    parser.add_argument('--gpu', action='store_true', help='enable cuda when used')                        
     parser.add_argument('--save_dir', default='.', help='Name a driectory to save the model')
     
     args = parser.parse_args()
@@ -28,7 +29,7 @@ def parse():
     return args
     
 
-def load_data():
+def load_data(data_dir):
     """ transform datasets and define dataloaders """
     
     train_dir = args.data_dir + '/train'  
@@ -63,10 +64,10 @@ def load_data():
     testloader = torch.utils.data.DataLoader(test_data, batch_size = 64)
     validloader = torch.utils.data.DataLoader(valid_data, batch_size = 64)
     
-    return trainloader, testloader, validloader
+    return trainloader, testloader, validloader, train_data
     
     
-def build_model():
+def build_model(arch, hidden_units, gpu, learning_rate):
     """ create new model from pretrained model + new classifier """
     
     #load pretrained model
@@ -74,7 +75,7 @@ def build_model():
         model = models.vgg19(pretrained=True)
         input_size = 25088
     elif args.arch == 'densenet':
-        model = models.densenet121(pretraine=True)
+        model = models.densenet121(pretrained=True)
         input_size = 1024
     elif args.arch == 'alexnet':
         model = models.alexnet(pretrained=True)
@@ -82,11 +83,17 @@ def build_model():
        
     
     #enable switching to GPU 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() and args.gpu else "cpu")
     
     #Freeze Features
     for param in model.parameters():
         param.requiers_grad = False
+        
+    #calculate number of output nodes based on number of labels from folders 
+    folders=0
+    for _, dirnames, filenames in os.walk(train_dir):
+        folders += len(dirnames) 
+    output_size = folders
 
     #Build new Classifier
     model.classifier = nn.Sequential(nn.Linear(input_size, args.hidden_units),
@@ -95,7 +102,7 @@ def build_model():
                                     nn.Linear(args.hidden_units, 1568),
                                     nn.ReLU(),
                                     nn.Dropout(p = 0.2),
-                                    nn.Linear(1568, 102),
+                                    nn.Linear(1568, output_size),
                                     nn.LogSoftmax(dim = 1))
 
     #Define Loss and Optimizer
@@ -106,11 +113,11 @@ def build_model():
     #Switch to GPU
     model.to(device)
     
-    return criterion, optimizer, model
+    return criterion, optimizer, model, device, input_size, output_size
     
     
     
-def train_model():
+def train_model(model, optimizer, criterion, trainloader, validloader, device, epochs):
     """ train new model to predict flower classes """
     
     epochs = args.epochs
@@ -167,15 +174,14 @@ def train_model():
     return model
 
 
-def save_checkpoint():
+def save_checkpoint(train_data, model, input_size, output_size, arch, optimizer, epochs, save_dir):
     """ save new model for later """
     
     model.class_to_idx = train_data.class_to_idx
 
     checkpoint = {'pretrained_model': args.arch,
                   'input_layer': input_size,
-                  'output_layer': 102,
-                  'features': model.features,
+                  'output_layer': output_size,
                   'classifier': model.classifier,
                   'state_dict': model.state_dict(),
                   'epochs': args.epochs,
