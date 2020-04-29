@@ -20,17 +20,30 @@ def parse():
     
     parser = argparse.ArgumentParser(description='Predict with nueronal network')
     parser.add_argument('--image_input', default='flowers/test/102/image_08004.jpg', help='Path of image to classify.')
-    
+    parser.add_argument('--check', default='.', help='Specify the path to the checkpoint file.')
+    parser.add_argument('--label_mapping', default='cat_to_name.json', help='Specify label mapping')
+    parser.add_argument('--topk', type=int, default=5, help='Number of classes and probabilities to predict')                      
     args = parser.parse_args()
     
     return args
 
 
-def load_checkpoint(filepath):
+def load_checkpoint(check):
     '''loads previous model'''
     
-    model = models.vgg19(pretrained=True)
-    checkpoint = torch.load(filepath)
+    checkpoint = torch.load(check)
+    pretrained_model = checkpoint['pretrained_model']
+    
+    if args.arch == 'vgg19':
+        model = models.vgg19(pretrained=True)
+        input_size = 25088
+    elif args.arch == 'densenet':
+        model = models.densenet121(pretrained=True)
+        input_size = 1024
+    elif args.arch == 'alexnet':
+        model = models.alexnet(pretrained=True)
+        input_size = 9216
+    
     model.classifier = checkpoint['classifier']
     model.load_state_dict(checkpoint['state_dict'])
     epochs = checkpoint['epochs']
@@ -102,14 +115,17 @@ def predict(image_path, model, topk=5):
     
     
     
-def main():
+def main(model, check, label_mapping):
     
-    model = load_checkpoint('checkpoint.pth')
+    model = load_checkpoint(check)
     print(model)
     
     predict() 
     
     
+    with open(label_mapping, 'r') as f:
+        cat_to_name = json.load(f)
+        
     name_classes = [cat_to_name[i] for i in classes] 
 
     #Image
