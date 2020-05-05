@@ -32,9 +32,9 @@ def parse():
 def load_data(data_dir):
     """ transform datasets and define dataloaders """
     
-    train_dir = args.data_dir + '/train'  
-    valid_dir = args.data_dir + '/valid'
-    test_dir = args.data_dir + '/test'
+    train_dir = args.data_dir + '/train/'  
+    valid_dir = args.data_dir + '/valid/'
+    test_dir = args.data_dir + '/test/'
     
     #transform
     train_transforms =  transforms.Compose([transforms.CenterCrop(224),
@@ -196,7 +196,7 @@ def save_checkpoint(train_data, model, input_size, output_size, arch, optimizer,
 def main():
     global args
     args = parse()
-    load_data()
+    load_data(args.data_dir)
     build_model()
     train_model()
     save_checkpoint()
