@@ -16,7 +16,7 @@ def parse():
     """ enable inputs """
     
     parser = argparse.ArgumentParser(description='Train a nueronal network.')
-    parser.add_argument('--data_dir', default='flowers', help='Name a data drectory')
+    parser.add_argument('--data_dir', default='flowers', help='Name a data directory')
     parser.add_argument('--arch', default='vgg19', help='Choose a model: vgg19, densenet, alexnet')
     parser.add_argument('--hidden_units', type=int, default=512, help='Set the number of hidden nodes')
     parser.add_argument('--learning_rate', type= float, default=0.01, help='Set the learning rate')
@@ -64,7 +64,7 @@ def load_data(data_dir):
     testloader = torch.utils.data.DataLoader(test_data, batch_size = 64)
     validloader = torch.utils.data.DataLoader(valid_data, batch_size = 64)
     
-    return trainloader, testloader, validloader, train_data
+    return trainloader, testloader, validloader, train_data, train_dir
     
     
 def build_model(arch, hidden_units, gpu, learning_rate):
@@ -113,7 +113,7 @@ def build_model(arch, hidden_units, gpu, learning_rate):
     #Switch to GPU
     model.to(device)
     
-    return criterion, optimizer, model, device, input_size, output_size
+    return criterion, optimizer, model, device, input_size, output_size, device
     
     
     
@@ -201,6 +201,11 @@ def main():
     train_model()
     save_checkpoint()
     
+    trainloader, testloader, validloader, train_data, train_dir = load_data(args.data_dir)
+    criterion, optimizer, model, device, input_size, output_size = build_model(args.arch, args.hidden_units, args.gpu, args.learning_rate, train_dir)
+    train_model(model, optimizer, criterion, trainloader, validloader, device, args.epochs)
+    save_checkpoint(train_data, model, input_size, output_size, args_arch, otimizer, args.epochs, args.save_dir)
+            
     print('Done!')   
     
     
