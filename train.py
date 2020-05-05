@@ -16,7 +16,7 @@ def parse():
     """ enable inputs """
     
     parser = argparse.ArgumentParser(description='Train a nueronal network.')
-    parser.add_argument('--data_dir', default='flowers', help='Name a data directory')
+    parser.add_argument('--data_dir', default='./flowers', help='Name a data directory')
     parser.add_argument('--arch', default='vgg19', help='Choose a model: vgg19, densenet, alexnet')
     parser.add_argument('--hidden_units', type=int, default=512, help='Set the number of hidden nodes')
     parser.add_argument('--learning_rate', type= float, default=0.01, help='Set the learning rate')
