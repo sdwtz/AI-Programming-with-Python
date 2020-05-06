@@ -20,7 +20,7 @@ def parse():
     parser.add_argument('--arch', default='vgg19', help='Choose a model: vgg19, densenet, alexnet')
     parser.add_argument('--hidden_units', type=int, default=512, help='Set the number of hidden nodes')
     parser.add_argument('--learning_rate', type= float, default=0.01, help='Set the learning rate')
-    parser.add_argument('--epochs', type=int, default=20, help='Set the number of epochs')
+    parser.add_argument('--epochs', type=int, default=2, help='Set the number of epochs')
     parser.add_argument('--gpu', action='store_true', help='enable cuda when used')                        
     parser.add_argument('--save_dir', default='.', help='Name a driectory to save the model')
     
@@ -67,7 +67,7 @@ def load_data(data_dir):
     return trainloader, testloader, validloader, train_data, train_dir
     
     
-def build_model(arch, hidden_units, gpu, learning_rate):
+def build_model(arch, hidden_units, gpu, learning_rate, train_dir):
     """ create new model from pretrained model + new classifier """
     
     #load pretrained model
@@ -113,7 +113,7 @@ def build_model(arch, hidden_units, gpu, learning_rate):
     #Switch to GPU
     model.to(device)
     
-    return criterion, optimizer, model, device, input_size, output_size, device
+    return criterion, optimizer, model, device, input_size, output_size
     
     
     
@@ -196,14 +196,13 @@ def save_checkpoint(train_data, model, input_size, output_size, arch, optimizer,
 def main():
     global args
     args = parse()
-    load_data(args.data_dir)
-    build_model()
-    train_model()
-    save_checkpoint()
     
     trainloader, testloader, validloader, train_data, train_dir = load_data(args.data_dir)
+    
     criterion, optimizer, model, device, input_size, output_size = build_model(args.arch, args.hidden_units, args.gpu, args.learning_rate, train_dir)
+    
     train_model(model, optimizer, criterion, trainloader, validloader, device, args.epochs)
+    
     save_checkpoint(train_data, model, input_size, output_size, args_arch, otimizer, args.epochs, args.save_dir)
             
     print('Done!')   
