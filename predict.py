@@ -19,9 +19,9 @@ def parse():
     """ enable inputs """
     
     parser = argparse.ArgumentParser(description='Predict with nueronal network')
-    parser.add_argument('--image_input', default='flowers/test/102/image_08004.jpg', help='Path of image to classify.')
+    parser.add_argument('--image', default='./flowers/test/102/image_08004.jpg', help='Path of image to classify.')
     parser.add_argument('--check', default='.', help='Specify the path to the checkpoint file.')
-    parser.add_argument('--label_mapping', default='cat_to_name.json', help='Specify label mapping')
+    parser.add_argument('--label_mapping', default='./cat_to_name.json', help='Specify label mapping')
     parser.add_argument('--topk', type=int, default=5, help='Number of classes and probabilities to predict')                      
     args = parser.parse_args()
     
@@ -31,7 +31,7 @@ def parse():
 def load_checkpoint(check):
     '''loads previous model'''
     
-    checkpoint = torch.load(check)
+    checkpoint = torch.load(args.check)
     pretrained_model = checkpoint['pretrained_model']
     
     if args.arch == 'vgg19':
@@ -62,10 +62,10 @@ def process_image(image):
     im = Image.open(image_path)
     
     transform = transforms.Compose([transforms.Resize(256),
-                                        transforms.CenterCrop(224),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.485, 0.456, 0.406], 
-                                                             [0.229, 0.224, 0.225])])
+                                    transforms.CenterCrop(224),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize([0.485, 0.456, 0.406], 
+                                                         [0.229, 0.224, 0.225])])
     
     return transform(im) 
 
@@ -115,15 +115,15 @@ def predict(image_path, model, topk=5):
     
     
     
-def main(model, check, label_mapping):
+def main(model, check, label_mapping, probs, classes):
     
     model = load_checkpoint(check)
     print(model)
+      
+    probs, classes = predict(args.image, model, args.topk)
     
-    predict() 
     
-    
-    with open(label_mapping, 'r') as f:
+    with open(args.label_mapping, 'r') as f:
         cat_to_name = json.load(f)
         
     name_classes = [cat_to_name[i] for i in classes] 
